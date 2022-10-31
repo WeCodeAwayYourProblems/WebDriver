@@ -1,0 +1,9 @@
+#b
+bin/
+
+#o
+obj/
+.omnisharp/
+
+#v
+.vscode/
