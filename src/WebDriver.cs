@@ -5,7 +5,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
 
 namespace CliHelperClass;
-public abstract class WebDriverManipulator : Helper
+public abstract partial class WebDriverManipulator : Helper
 {
    public const double ImplicitWait = 10.0;
    public const double ImplicitWaitDefault = 0.0;
@@ -318,25 +318,15 @@ public abstract class WebDriverManipulator : Helper
       }
       // End Local Function
    }
-   private string ConvertAttributeTypeToString(AttributeType typeToReturn)
-   {
-      string[] returnStr = new string[1];
-      switch (typeToReturn)
+   private string ConvertAttributeTypeToString(AttributeType typeToReturn) =>
+      typeToReturn switch
       {
-         case AttributeType.Id:
-            returnStr[0] = "Id";
-            break;
-         case AttributeType.CssSelector:
-            returnStr[0] = "CssSelector";
-            break;
-         case AttributeType.AriaLabel:
-            returnStr[0] = "aria-label";
-            break;
-         default:
-            throw new Exception($"{nameof(AttributeType)} {typeToReturn} has not been implemented in the switch conversion inside the {nameof(ConvertAttributeTypeToString)} method in {nameof(WebDriverManipulator)} class.");
-      }
-      return returnStr[0];
-   }
+         AttributeType.Id => "Id",
+         AttributeType.CssSelector => "CssSelector",
+         AttributeType.AriaLabel => "aria-label",
+         _ =>
+            throw new Exception($"{nameof(AttributeType)} {typeToReturn} has not been implemented in the switch conversion inside the {nameof(ConvertAttributeTypeToString)} method in {nameof(WebDriverManipulator)} class."),
+      };
 
    public ReadOnlyCollection<IWebElement> FindAllElements(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int tries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
@@ -566,37 +556,37 @@ public abstract class WebDriverManipulator : Helper
          ResizeWindow(FMaxMin, FMaxMin);
       return clicked;
    }
-   public By ConvertElementTypeToByType(ElementType by, string element)
+   public By ConvertStringToByType(string by, string element) =>
+   ConvertElementTypeToByType
+   (
+      ConvertStringToElementType(by),
+      element
+   );
+   public By ConvertElementTypeToByType(ElementType by, string element) =>
+   by switch
    {
-      By[] type = new By[1] { By.CssSelector(element) };
-      switch (by)
-      {
-         case ElementType.ClassName:
-            type[0] = By.ClassName(element);
-            break;
-         case ElementType.CssSelector:
-            type[0] = By.CssSelector(element);
-            break;
-         case ElementType.Id:
-            type[0] = By.Id(element);
-            break;
-         case ElementType.LinkText:
-            type[0] = By.LinkText(element);
-            break;
-         case ElementType.Name:
-            type[0] = By.Name(element);
-            break;
-         case ElementType.TagName:
-            type[0] = By.TagName(element);
-            break;
-         case ElementType.XPath:
-            type[0] = By.XPath(element);
-            break;
-         default:
-            throw new Exception($"{nameof(ElementType)} {by} has not been implemented in the switch conversion inside the {nameof(ConvertElementTypeToByType)} method in {nameof(WebDriverManipulator)} class.");
-      }
-      return type[0];
-   }
+      ElementType.ClassName => By.ClassName(element),
+      ElementType.CssSelector => By.CssSelector(element),
+      ElementType.Id => By.Id(element),
+      ElementType.LinkText => By.LinkText(element),
+      ElementType.Name => By.Name(element),
+      ElementType.TagName => By.TagName(element),
+      ElementType.XPath => By.XPath(element),
+      _ => throw new Exception($"{nameof(ElementType)} {by} has not been implemented in the switch conversion inside the {nameof(ConvertElementTypeToByType)} method in {nameof(WebDriverManipulator)} class."),
+   };
+
+   public ElementType ConvertStringToElementType(string type) =>
+   SplitJoinLowerText(type, split: " ") switch
+   {
+      "classname" => ElementType.ClassName,
+      "cssselector" => ElementType.CssSelector,
+      "id" => ElementType.Id,
+      "linktext" => ElementType.LinkText,
+      "name" => ElementType.Name,
+      "tagname" => ElementType.TagName,
+      "xpath" => ElementType.XPath,
+      _ => throw new Exception($"The paramter {nameof(type)} has been input as \"{type}\". This is either not implemented by the {nameof(ElementType)} item or has been input erroneously."),
+   };
 
    public void SendKeysToElement(ElementType by, string element, string message, bool multipleTries = true)
    {
@@ -836,86 +826,23 @@ public abstract class WebDriverManipulator : Helper
    public const string NumberOfPagesSelector = "#account_main > div > div:nth-child(3) > div > div.calls.clearfix > div > div.container > div > div > ul";
    public const string CalendarSelector = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div > i";
    public const string CalendarSelector2 = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div";
-
-
-   // Enums for special types
-   public enum ElementType
-   {
-      Id,
-      Name,
-      TagName,
-      CssSelector,
-      ClassName,
-      LinkText,
-      XPath
-   }
-   public enum AttributeType
-   {
-      Id,
-      CssSelector,
-      AriaLabel,
-   }
-   public enum KeysEnum
-   {
-      Enter,
-      Clear,
-      Return,
-      Escape,
-   }
-   public string ConvertKeys(KeysEnum keys)
-   {
-      string[] returnKeys = new string[1] { "" };
-
-      switch (keys)
+   public Exception KeyException = new("The given parameter does not match the appropriate key.");
+   public KeysEnum ConvertFromStringToKeyEnum(string key) =>
+      key switch
       {
-         case KeysEnum.Enter:
-            returnKeys[0] = Keys.Enter;
-            break;
-         case KeysEnum.Clear:
-            returnKeys[0] = Keys.Clear;
-            break;
-         case KeysEnum.Return:
-            returnKeys[0] = Keys.Return;
-            break;
-         case KeysEnum.Escape:
-            returnKeys[0] = Keys.Escape;
-            break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         // case KeysEnum:
-         //    returnKeys[0] = ;
-         //    break;
-         default:
-            throw new Exception($"The parameter {nameof(keys)} input was: {keys}. Either this is not valid, or {keys} has not been implemented in {nameof(WebDriverManipulator)} class.");
-      }
-      return returnKeys[0];
-   }
+         "Enter" or "enter" => KeysEnum.Enter,
+         "Clear" or "clear" => KeysEnum.Clear,
+         "Return" or "return" => KeysEnum.Return,
+         "Escape" or "escape" => KeysEnum.Escape,
+         _ => throw KeyException,
+      };
+   public string ConvertKeys(KeysEnum keys) =>
+      keys switch
+      {
+         KeysEnum.Enter => Keys.Enter,
+         KeysEnum.Clear => Keys.Clear,
+         KeysEnum.Return => Keys.Return,
+         KeysEnum.Escape => Keys.Escape,
+         _ => throw KeyException,
+      };
 }
