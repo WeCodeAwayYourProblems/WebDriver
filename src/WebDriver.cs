@@ -1,0 +1,921 @@
+using System.Drawing;
+using System.Collections.ObjectModel;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Interactions;
+
+namespace CliHelperClass;
+public abstract class WebDriverManipulator : Helper
+{
+   public const double ImplicitWait = 10.0;
+   public const double ImplicitWaitDefault = 0.0;
+   public const int TotalAttemptsDefault = 5;
+   public const int WindowWidth = 1536 / 2;
+   public const int WindowHeight = 960;
+   public const bool TMaxMin = true;
+   public const bool FMaxMin = false;
+   public ChromeDriver? Chrome { get; private set; }
+
+   // Chrome methods
+   public string GetCurrentUrl() => Chrome!.Url;
+
+   public virtual void StartChrome(string loginURL, bool openSecondTab, bool openThirdTab = false, bool maximizeWindow = false, bool minimizeWindow = false, int windowWidth = WindowWidth, int windowHeight = WindowHeight, bool pause = true)
+   {
+      // Instantiate ChromeDriver and resize Chrome window
+      InstantiateChrome(loginURL, openTwoTabs: openSecondTab);
+      ResizeWindow(maximizeWindow, minimizeWindow, windowWidth, windowHeight);
+      if (pause)
+         SleepSeconds(5);
+      AdjustImplicitWait(ImplicitWait);
+
+      if (openSecondTab)
+         OpenNewTab();
+      if (openThirdTab)
+         OpenNewTab();
+
+      NavigateToUrl(loginURL, usualWay: false);
+   }
+   public void InstantiateChrome(string loginUrl, bool openTwoTabs = true)
+   {
+      Chrome = new ChromeDriver();
+
+      if (openTwoTabs)
+         OpenNewTab();
+   }
+   public void CloseChrome(bool tryAltOnFailure = true)
+   {
+      if (tryAltOnFailure)
+      {
+         try
+         { handlesMethod(); }
+         catch
+         { tryMethod(); }
+      }
+      else
+      { tryMethod(); }
+      // End of method
+      // Start of local function
+      void tryMethod()
+      {
+         bool finished = false;
+         while (!finished)
+         {
+            try
+            { Chrome!.Close(); }
+            catch
+            { finished = true; }
+            try
+            { Chrome!.SwitchTo().Window(Chrome!.WindowHandles[0]); }
+            catch
+            { finished = true; }
+         }
+      }
+      // End of local function tryMethod
+      // Start of local function
+      void handlesMethod()
+      {
+         var handles = Chrome!.WindowHandles;
+         bool closed = false;
+         while (!closed)
+         {
+            for (int handle = 0; handle < handles.Count; handle++)
+            {
+               Chrome!.Close();
+               Chrome!.SwitchTo().Window(Chrome!.WindowHandles[0]);
+            }
+         }
+      }
+      // End of local function handlesMethod
+   }
+   public void AdjustImplicitWait(double shortenImplicitWaitBy)
+   { Chrome!.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(shortenImplicitWaitBy); }
+   public void RefreshChrome() => Chrome!.Navigate().Refresh();
+
+
+   // FindElement() methods
+   public IWebElement FindElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By type = ConvertElementTypeToByType(by, element);
+      return FindElementInternally(adjustWindow, multipleTries, type, shortenImplicitWaitBy);
+   }
+   public IWebElement FindElement(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By type = ConvertElementTypeToByType(by, element);
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      List<IWebElement> returnValue = new(1);
+
+      bool[] breakValue = new bool[1] { false };
+      if (multipleTries)
+      {
+         for (int tries = 1; tries <= maxTries; tries++)
+         {
+            LocalFuncDoubleFindElementMethod(superElement, type, returnValue, breakValue);
+            if (breakValue[0])
+               break;
+         }
+      }
+      else
+      { LocalFuncDoubleFindElementMethod(superElement, type, returnValue, breakValue); }
+
+      AdjustImplicitWait(ImplicitWait);
+      return returnValue[0];
+
+      // Start Local Functions
+      void LocalFuncDoubleFindElementMethod(IWebElement superElement, By type, List<IWebElement> returnValue, bool[] breakValue)
+      {
+         try
+         {
+            returnValue.Add(superElement.FindElement(type));
+            breakValue[0] = true;
+         }
+         catch
+         {
+            try
+            {
+               string superElementAttribute = ConvertAttributeTypeToString(AttributeType.CssSelector);
+               string superElementSelector = superElement.GetAttribute(superElementAttribute);
+               By superElementBy = ConvertElementTypeToByType(ElementType.CssSelector, superElementSelector);
+               returnValue.Add(Chrome!.FindElement(superElementBy));
+               breakValue[0] = true;
+            }
+            catch { }
+         }
+      }
+      // End Local Functions
+   }
+   public IWebElement FindElement(ElementType bySE, string superElement, ElementType by, string element, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By typeSE = ConvertElementTypeToByType(bySE, superElement);
+      By type = ConvertElementTypeToByType(by, element);
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      List<IWebElement> returnValue = new(1) { Chrome!.FindElement(typeSE) };
+
+      bool[] breakValue = new bool[1] { false };
+      if (multipleTries)
+      {
+         for (int tries = 1; tries <= maxTries; tries++)
+         {
+            LocalFuncDoubleFindElementMethod(typeSE, type, returnValue, breakValue);
+            if (breakValue[0])
+               break;
+         }
+      }
+      else
+      { LocalFuncDoubleFindElementMethod(typeSE, type, returnValue, breakValue); }
+
+      AdjustImplicitWait(ImplicitWait);
+      return returnValue[0];
+
+      // Start Local Functions
+      void LocalFuncDoubleFindElementMethod(By typeSE, By type, List<IWebElement> returnValue, bool[] breakValue)
+      {
+         try
+         {
+            returnValue.Add(Chrome!.FindElement(typeSE).FindElement(type));
+            breakValue[0] = true;
+         }
+         catch
+         {
+            try
+            {
+               returnValue.Add(Chrome!.FindElement(typeSE).FindElement(type));
+               breakValue[0] = true;
+            }
+            catch { }
+         }
+      }
+      // End Local Functions
+   }
+   public IWebElement FindElementWithManyPossibleStrings(ElementType by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault, params string[] elements)
+   {
+      IWebElement[] returnElement = new IWebElement[] { };
+      foreach (var element in elements)
+      {
+         By type = ConvertElementTypeToByType(by, element);
+         try
+         {
+            returnElement[0] = FindElementInternally(adjustWindow, multipleTries, type, shortenImplicitWaitBy);
+            break;
+         }
+         catch { continue; }
+      }
+      return returnElement[0];
+   }
+   private IWebElement FindElementInternally(bool adjustWindow, bool multipleTries, By byType, double shortenImplicitWaitBy)
+   {
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      if (!multipleTries)
+      {
+         IWebElement valuer = Chrome!.FindElement(byType);
+         AdjustImplicitWait(ImplicitWait);
+         return valuer;
+      }
+      else
+      {
+         try
+         {
+            IWebElement valuer = Chrome!.FindElement(byType);
+            AdjustImplicitWait(ImplicitWait);
+            return valuer;
+         }
+         catch
+         {
+            RefreshChrome();
+            try
+            {
+               if (adjustWindow)
+                  ResizeWindow(TMaxMin, FMaxMin);
+               Chrome!.FindElement(byType);
+               if (adjustWindow)
+                  ResizeWindow(FMaxMin, FMaxMin);
+               IWebElement valuer = Chrome!.FindElement(byType);
+               AdjustImplicitWait(ImplicitWait);
+               return valuer;
+            }
+            catch
+            {
+               if (adjustWindow)
+                  ResizeWindow(FMaxMin, FMaxMin);
+               IWebElement valuer = Chrome!.FindElement(byType);
+               AdjustImplicitWait(ImplicitWait);
+               return valuer;
+            }
+         }
+      }
+   }
+   public ReadOnlyCollection<IWebElement> FindAllElements(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By type = ConvertElementTypeToByType(by, element);
+      return FindAllElements(adjustWindow, byType: type, multipleTries: multipleTries);
+   }
+   public ReadOnlyCollection<IWebElement> FindAllElementsWithManyPossibleStrings(ElementType by, bool adjustWindow, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault, params string[] elements)
+   {
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      List<ReadOnlyCollection<IWebElement>> returnArray = new(1);
+      foreach (var element in elements)
+      {
+         By type = ConvertElementTypeToByType(by, element);
+         if (!multipleTries)
+         {
+            try
+            { returnArray.Add(Chrome!.FindElements(type)); }
+            catch { }
+         }
+         else
+         {
+            for (int trial = 1; trial <= maxTries; trial++)
+            {
+               try
+               {
+                  returnArray.Add(Chrome!.FindElements(type));
+                  break;
+               }
+               catch
+               {
+                  RefreshChrome();
+                  if (adjustWindow)
+                     ResizeWindow(TMaxMin, FMaxMin);
+                  try
+                  {
+                     returnArray.Add(Chrome!.FindElements(type));
+                     break;
+                  }
+                  catch { }
+               }
+            }
+         }
+      }
+      AdjustImplicitWait(ImplicitWait);
+      return returnArray[0];
+   }
+   public List<string> GetAllElementsAttribute(ElementType by, string element, AttributeType typeToReturn, bool multipleTries = true, int tries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By elementBy = ConvertElementTypeToByType(by, element);
+      string attribute = ConvertAttributeTypeToString(typeToReturn);
+      List<string> elementsToReturn = new();
+      if (!multipleTries)
+      { AddElementAttributeToList(elementBy, attribute, elementsToReturn); }
+      else
+      {
+         for (int attempt = 0; attempt < tries; attempt++)
+         {
+            try
+            {
+               AddElementAttributeToList(elementBy, attribute, elementsToReturn);
+               break;
+            }
+            catch { }
+         }
+      }
+
+      return elementsToReturn;
+
+      // Start Local Function
+      void AddElementAttributeToList(By elementBy, string attribute, List<string> elementsToReturn)
+      {
+         foreach (var iElement in Chrome!.FindElements(elementBy))
+            elementsToReturn.Add(iElement.GetAttribute(attribute));
+      }
+      // End Local Function
+   }
+   private string ConvertAttributeTypeToString(AttributeType typeToReturn)
+   {
+      string[] returnStr = new string[1];
+      switch (typeToReturn)
+      {
+         case AttributeType.Id:
+            returnStr[0] = "Id";
+            break;
+         case AttributeType.CssSelector:
+            returnStr[0] = "CssSelector";
+            break;
+         case AttributeType.AriaLabel:
+            returnStr[0] = "aria-label";
+            break;
+         default:
+            throw new Exception($"{nameof(AttributeType)} {typeToReturn} has not been implemented in the switch conversion inside the {nameof(ConvertAttributeTypeToString)} method in {nameof(WebDriverManipulator)} class.");
+      }
+      return returnStr[0];
+   }
+
+   public ReadOnlyCollection<IWebElement> FindAllElements(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int tries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      By type = ConvertElementTypeToByType(by, element);
+      return FindElementsBySuperElement(superElement, type, multipleTries, tries, shortenImplicitWaitBy);
+
+      // Start Local Function
+      ReadOnlyCollection<IWebElement> FindElementsBySuperElement(IWebElement superElement, By type, bool multipleTries, int tries, double shortenImplicitWaitBy)
+      {
+         AdjustImplicitWait(shortenImplicitWaitBy);
+         for (int reps = 0; reps < tries; reps++)
+         {
+            if (!multipleTries || reps.Equals(tries - 1))
+               break;
+
+            try
+            {
+               superElement.FindElements(type);
+               break;
+            }
+            catch
+            { }
+         }
+         AdjustImplicitWait(ImplicitWait);
+         return superElement.FindElements(type);
+      }
+   }
+   public ReadOnlyCollection<IWebElement> FindAllElements(bool adjustWindow, bool multipleTries, By byType)
+   {
+      if (!multipleTries)
+      { return Chrome!.FindElements(byType); }
+      else
+      {
+         try
+         { return Chrome!.FindElements(byType); }
+         catch
+         {
+            RefreshChrome();
+            try
+            {
+               if (adjustWindow)
+                  ResizeWindow(TMaxMin, FMaxMin);
+               Chrome!.FindElement(byType);
+               if (adjustWindow)
+                  ResizeWindow(FMaxMin, FMaxMin);
+               return Chrome!.FindElements(byType);
+            }
+            catch { return Chrome!.FindElements(byType); }
+         }
+      }
+   }
+
+
+   // Click() and SendKeys() methods
+   public void ClickOnElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, int maxAttempts = 5, double shortenImplicitWaitTo = ImplicitWaitDefault)
+   {
+      bool clicked = false;
+      int attempts = 1;
+      AdjustImplicitWait(shortenImplicitWaitTo);
+      if (!multipleTries)
+      { FindElement(by, element, adjustWindow, multipleTries).Click(); }
+      else
+      {
+         while (!clicked)
+         {
+            clicked = attempts > maxAttempts ? true : false;
+            if (clicked)
+               break;
+            clicked = ClickedOnElementBool(by, adjustWindow, multipleTries, shortenImplicitWaitTo, element);
+            attempts++;
+         }
+      }
+      AdjustImplicitWait(ImplicitWait);
+   }
+   public void ClickOnElement(IWebElement element, bool multipleTries = true, int maxAttempts = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      Actions actions = new(Chrome);
+      AdjustImplicitWait(shortenImplicitWaitBy);
+
+      if (!multipleTries)
+      { TryToClickWithTwoMethods(element, actions); }
+      else
+      {
+         for (int attempt = 1; attempt <= maxAttempts; attempt++)
+         {
+            try
+            {
+               TryToClickWithTwoMethods(element, actions, attempt);
+               break;
+            }
+            catch
+            {
+               try
+               {
+                  TryToClickWithTwoMethods(element, actions, attempt);
+                  break;
+               }
+               catch
+               { }
+            }
+         }
+      }
+      AdjustImplicitWait(ImplicitWait);
+
+      // Start Local Functions
+      static void TryToClickWithTwoMethods(IWebElement element, Actions actions, int attempt = 0)
+      {
+         try
+         { element.Click(); }
+         catch
+         { actions.Click(element).Perform(); }
+      }
+      // End Local Functions
+   }
+   public void ClickOnElementWithManyPossibleStrings(ElementType by, bool adjustWindow, bool multipleTries = true, int maxAttempts = 4, double shortenImplicitWaitBy = ImplicitWaitDefault, params string[] elements)
+   {
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      bool clicked = false;
+      int attempts = 0;
+
+      // This number ensures that we get one attempt only
+      if (!multipleTries)
+         maxAttempts = 0;
+
+      while (!clicked)
+      {
+         clicked = attempts > maxAttempts ? true : false;
+         clicked = ClickedOnElementBool(by, adjustWindow: adjustWindow, multipleTries: multipleTries, shortenImplicitWaitBy, elements);
+         attempts++;
+      }
+      AdjustImplicitWait(ImplicitWait);
+   }
+   public bool ClickedOnElementBool(ElementType by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy, params string[] elements)
+   {
+      bool[] clicked = new bool[1] { false };
+      foreach (var element in elements)
+      {
+         if (!multipleTries)
+         {
+            bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+            if (breakLoop)
+               break;
+         }
+         else
+         {
+            try
+            {
+               bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (ElementClickInterceptedException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (StaleElementReferenceException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (NoSuchElementException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (ElementNotInteractableException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+         }
+      }
+      return clicked[0];
+
+      // Start Local Function
+      bool LocalFuncComplexBreakLoop(ElementType by, string element, bool adjustWindow, bool multipleTries, out bool clicked)
+      {
+         bool breakout;
+         try
+         {
+            clicked = RefreshResizeClick(by, adjustWindow, element, multipleTries);
+            breakout = true;
+         }
+         catch
+         {
+            if (adjustWindow)
+               ResizeWindow(FMaxMin, FMaxMin);
+            breakout = false;
+            clicked = false;
+         }
+
+         return breakout;
+      }
+      // Start Local Function
+      bool LocalFuncSimpleBreakLoop(ElementType by, string element, bool adjustWindow, bool multipleTries, out bool clicked)
+      {
+         FindElement(by, element, adjustWindow, multipleTries: multipleTries).Click();
+         clicked = true;
+         return true;
+      }
+      // End All Local Functions
+   }
+   public bool RefreshResizeClick(ElementType by, bool adjustWindow, string element, bool multipleTries)
+   {
+      bool clicked = false;
+      RefreshChrome();
+      if (adjustWindow)
+         ResizeWindow(TMaxMin, FMaxMin);
+      try
+      {
+         FindElement(by, element, multipleTries).Click();
+         clicked = true;
+      }
+      catch
+      {
+         Actions actions = new(Chrome);
+         actions.MoveToElement(FindElement(by, element, multipleTries
+         )).Click(FindElement(by, element, multipleTries)).Perform();
+         clicked = true;
+      }
+      if (adjustWindow)
+         ResizeWindow(FMaxMin, FMaxMin);
+      return clicked;
+   }
+   public By ConvertElementTypeToByType(ElementType by, string element)
+   {
+      By[] type = new By[1] { By.CssSelector(element) };
+      switch (by)
+      {
+         case ElementType.ClassName:
+            type[0] = By.ClassName(element);
+            break;
+         case ElementType.CssSelector:
+            type[0] = By.CssSelector(element);
+            break;
+         case ElementType.Id:
+            type[0] = By.Id(element);
+            break;
+         case ElementType.LinkText:
+            type[0] = By.LinkText(element);
+            break;
+         case ElementType.Name:
+            type[0] = By.Name(element);
+            break;
+         case ElementType.TagName:
+            type[0] = By.TagName(element);
+            break;
+         case ElementType.XPath:
+            type[0] = By.XPath(element);
+            break;
+         default:
+            throw new Exception($"{nameof(ElementType)} {by} has not been implemented in the switch conversion inside the {nameof(ConvertElementTypeToByType)} method in {nameof(WebDriverManipulator)} class.");
+      }
+      return type[0];
+   }
+
+   public void SendKeysToElement(ElementType by, string element, string message, bool multipleTries = true)
+   {
+      if (message != null)
+      {
+         FindElement(by, element, multipleTries).SendKeys(message);
+      }
+      else
+      {
+         throw new System.Exception($"{nameof(message)} parameter cannot be null.");
+      }
+   }
+
+
+   // Find text methods
+   public string FindElementsText(ElementType by, bool adjustWindow, bool multipleTries = false, double shortenImplicitWaitBy = ImplicitWaitDefault, params string[] elements)
+   {
+      string[] text = new string[1] { "" };
+      int attempts = 0;
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      foreach (string element in elements)
+      {
+         if (attempts > 4)
+            break;
+         if (attempts > 1)
+            RefreshChrome();
+
+         try
+         {
+            text[0] = FindElementText(by, element: element, adjustWindow, multipleTries: multipleTries);
+            break;
+         }
+         catch { }
+
+         if (text[0] != "")
+         { break; }
+      }
+      AdjustImplicitWait(ImplicitWait);
+
+      return text[0];
+   }
+   public string FindElementText(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault, int totalAttempts = TotalAttemptsDefault)
+   {
+      string[] text = new string[1] { "" };
+      int attempts = 0;
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      if (!multipleTries)
+      { text[0] = FindElement(by, element, multipleTries).Text; }
+      else
+      {
+         while (text[0] == "")
+         {
+            if (attempts.Equals(totalAttempts))
+            {
+               text[0] = FindElement(by, element, adjustWindow, multipleTries: false).Text;
+               break; // We want to throw exceptions, if possible
+            }
+            if (attempts > 0)
+               RefreshChrome();
+
+            try
+            {
+               // Regular text method
+               text[0] = FindElement(by, element, adjustWindow, multipleTries, shortenImplicitWaitBy).Text;
+               break;
+            }
+            catch
+            {
+               if (attempts > totalAttempts)
+                  FindElement(by, element, adjustWindow, multipleTries: false);
+            }
+            attempts++;
+         }
+      }
+      AdjustImplicitWait(ImplicitWait);
+      return text[0];
+   }
+
+
+   // Get Attribute methods
+   public string GetElementType(ElementType by, string element, AttributeType attributeType)
+   {
+      By type = ConvertElementTypeToByType(by, element);
+      return GetElementType(type, attributeType);
+   }
+   public string GetElementTypeWithManyPossibleStrings(ElementType by, AttributeType attributeType, params string[] elements)
+   {
+      string[] returner = new string[1] { "" };
+      foreach (var element in elements)
+      {
+         By type = ConvertElementTypeToByType(by, element);
+
+         try { returner[0] = GetElementType(type, attributeType); }
+         catch { };
+      }
+      return returner[0];
+   }
+   private string GetElementType(By type, AttributeType attributeType)
+   => Chrome!.FindElement(type).GetAttribute(ConvertAttributeTypeToString(attributeType));
+
+
+   // Window Manipulation methods
+   public void ResizeWindow(bool maximize, bool minimize, int width = 0, int height = 0)
+   {
+      if (maximize && minimize)
+         throw new ArgumentException($"Parameter arguments {nameof(maximize)} and {nameof(minimize)} cannot both be true in {nameof(ResizeWindow)}.\nArg {nameof(maximize)} input: {maximize}.\nArg {nameof(minimize)} input: {minimize}");
+      if (minimize)
+         Chrome!.Manage().Window.Minimize();
+      if (maximize)
+         Chrome!.Manage().Window.Maximize();
+
+      if (width > 0 && height > 0)
+         LocalResizeWindow(width, height);
+      SleepSeconds(0.5);
+
+      void LocalResizeWindow(int width, int height) => Chrome!.Manage().Window.Size = new Size(width, height);
+   }
+   public void OpenNewTab() => ExecuteAScript(JavaScriptOpenNewTab);
+   public void ExecuteAScript(string script) => ((IJavaScriptExecutor)Chrome!).ExecuteScript(script);
+   public void SwitchToWindow(string window) => Chrome!.SwitchTo().Window(window);
+   public void SwitchToWindow(int windowNum) => Chrome!.SwitchTo().Window(Chrome!.WindowHandles[windowNum]);
+   public void NavigateToUrl(string url, bool usualWay)
+   {
+      if (usualWay)
+      {
+         try { Chrome!.Navigate().GoToUrl(url); }
+         catch (WebDriverException)
+         {
+            try { RefreshChrome(); }
+            catch
+            {
+               SleepSeconds(10.5);
+               Chrome!.Navigate().GoToUrl(url);
+            }
+         }
+      }
+      else
+      {
+         try { Chrome!.Url = url; }
+         catch (WebDriverException)
+         { SleepSeconds(10.5); Chrome!.Url = url; }
+      }
+   }
+   public void ScrollToElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitTo = 0, int numberOfTries = 5)
+   {
+      Actions actions = new(Chrome);
+      for (int tries = 1; tries <= numberOfTries; tries++)
+      {
+         try
+         {
+            actions.MoveToElement(FindElement(by, element, adjustWindow, multipleTries, shortenImplicitWaitTo)).Perform();
+            break;
+         }
+         catch
+         { }
+      }
+   }
+   public void ScrollToElement(IWebElement element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault, int numberOfTries = 5)
+   {
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      Actions actions = new(Chrome);
+      if (multipleTries)
+      {
+         for (int tries = 1; tries <= numberOfTries; tries++)
+         {
+            try
+            {
+               actions.MoveToElement(element).Perform();
+               break;
+            }
+            catch
+            {
+               RefreshChrome();
+               if (adjustWindow)
+                  ResizeWindow(TMaxMin, FMaxMin);
+               try
+               {
+                  actions.MoveToElement(element).Perform();
+                  break;
+               }
+               catch { }
+            }
+         }
+      }
+      else
+      { actions.MoveToElement(element).Perform(); }
+      AdjustImplicitWait(ImplicitWait);
+   }
+   public void ScrollToElementWithManyPossibleStrings(ElementType by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = 0, int numberOfTries = 5, params string[] elements)
+   {
+      Actions actions = new(Chrome);
+      for (int tries = 1; tries <= numberOfTries; tries++)
+      {
+         foreach (var element in elements)
+         {
+            try
+            {
+               actions.MoveToElement(FindElement(by, element, adjustWindow, multipleTries, shortenImplicitWaitBy)).Perform();
+               break;
+            }
+            catch
+            { }
+         }
+      }
+   }
+   private const string JavaScriptOpenNewTab = "window.open('about:blank', '_blank');";
+
+
+   // Constants: Element strings -- USED IN ANY AND ALL TASKS
+   public const string TagElement1 = "form-inline";
+   public const string TagElement2 = "select2-choices";
+   public const string NotesSection = "notes-section";
+   public const string NotesBoxesElem = "box";
+   public const string SmallText1 = "small";
+   public const string SmallText2 = "this call";
+   public const string NotesText1 = "comment-col-note";
+   public const string NotesText2 = "comment-display";
+   public const string User_LoginElem = "user_login";
+   public const string User_PasswordElem = "user_password";
+   public const string LoginButtonSelector = "#signin > input.button.callout.bigbutton";
+   public const string AccountNumberSelector = "#body > div.sidenav-container.container-fluid > div > div.col-md-10.pageform > div > div:nth-child(1) > div > span";
+   public const string MenuLabelSelector = "#ctm-main-nav > ul.nav.navbar-nav.navbar-right.ctm-outer-hr.ctm-settings-hr > li.dropdown.nav-recent-accounts > a > span > span";
+   public const string Edit = "Edit";
+   public const string LinkSelector = "#body > div.standard-table-container > div.standard-table-parent.container-fluid > div:nth-child(9) > div > table > tbody > tr > td:nth-child(1) > a";
+   public const string MainList = "main-list";
+   public const string TrElem = "tr";
+   public const string TdElem = "td";
+   public const string H5Elem = "h5";
+   public const string Duration = "duration";
+   public const string BusinessUserElem = "business_user_username";
+   public const string BusinessPassElem = "business_user_password";
+   public const string Button = "button";
+   public const string CallsSearchResults = "calls_search_results";
+   public const string TrTagName = "tr";
+   public const string PaneBodyCell = "pane--body-cell";
+   public const string DateRangeSelector = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div > span";
+   public const string NumberOfPagesSelector = "#account_main > div > div:nth-child(3) > div > div.calls.clearfix > div > div.container > div > div > ul";
+   public const string CalendarSelector = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div > i";
+   public const string CalendarSelector2 = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div";
+
+
+   // Enums for special types
+   public enum ElementType
+   {
+      Id,
+      Name,
+      TagName,
+      CssSelector,
+      ClassName,
+      LinkText,
+      XPath
+   }
+   public enum AttributeType
+   {
+      Id,
+      CssSelector,
+      AriaLabel,
+   }
+   public enum KeysEnum
+   {
+      Enter,
+      Clear,
+      Return,
+      Escape,
+   }
+   public string ConvertKeys(KeysEnum keys)
+   {
+      string[] returnKeys = new string[1] { "" };
+
+      switch (keys)
+      {
+         case KeysEnum.Enter:
+            returnKeys[0] = Keys.Enter;
+            break;
+         case KeysEnum.Clear:
+            returnKeys[0] = Keys.Clear;
+            break;
+         case KeysEnum.Return:
+            returnKeys[0] = Keys.Return;
+            break;
+         case KeysEnum.Escape:
+            returnKeys[0] = Keys.Escape;
+            break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         // case KeysEnum:
+         //    returnKeys[0] = ;
+         //    break;
+         default:
+            throw new Exception($"The parameter {nameof(keys)} input was: {keys}. Either this is not valid, or {keys} has not been implemented in {nameof(WebDriverManipulator)} class.");
+      }
+      return returnKeys[0];
+   }
+}
