@@ -578,8 +578,8 @@ public abstract partial class WebDriverManipulator : Helper
    public ElementType ConvertStringToElementType(string type) =>
    SplitJoinLowerText(type, split: " ") switch
    {
-      "classname" => ElementType.ClassName,
-      "cssselector" => ElementType.CssSelector,
+      "classname" or "class" => ElementType.ClassName,
+      "cssselector" or "selector" => ElementType.CssSelector,
       "id" => ElementType.Id,
       "linktext" => ElementType.LinkText,
       "name" => ElementType.Name,
@@ -827,13 +827,22 @@ public abstract partial class WebDriverManipulator : Helper
    public const string CalendarSelector = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div > i";
    public const string CalendarSelector2 = "#account_main > div > div:nth-child(2) > div > div:nth-child(2) > div";
    public Exception KeyException = new("The given parameter does not match the appropriate key.");
+   public string ConvertStringToKeyString(string key) =>
+   SplitJoinLowerText(key, " ") switch
+   {
+      "enter" => Keys.Enter,
+      "clear" => Keys.Clear,
+      "return" => Keys.Return,
+      "escape" => Keys.Escape,
+      _ => throw KeyException,
+   };
    public KeysEnum ConvertFromStringToKeyEnum(string key) =>
-      key switch
+      SplitJoinLowerText(key, " ") switch
       {
-         "Enter" or "enter" => KeysEnum.Enter,
-         "Clear" or "clear" => KeysEnum.Clear,
-         "Return" or "return" => KeysEnum.Return,
-         "Escape" or "escape" => KeysEnum.Escape,
+         "enter" => KeysEnum.Enter,
+         "clear" => KeysEnum.Clear,
+         "return" => KeysEnum.Return,
+         "escape" => KeysEnum.Escape,
          _ => throw KeyException,
       };
    public string ConvertKeys(KeysEnum keys) =>
