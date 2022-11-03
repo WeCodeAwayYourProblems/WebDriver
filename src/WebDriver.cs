@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Support.UI;
 
 namespace CliHelperClass;
 public abstract partial class WebDriverManipulator : Helper
@@ -15,6 +16,7 @@ public abstract partial class WebDriverManipulator : Helper
    public const bool TMaxMin = true;
    public const bool FMaxMin = false;
    public ChromeDriver? Chrome { get; private set; }
+   public WebDriverWait? Wait { get; private set; }
 
    // Chrome methods
    public string GetCurrentUrl() => Chrome!.Url;
@@ -38,6 +40,8 @@ public abstract partial class WebDriverManipulator : Helper
    public void InstantiateChrome(string loginUrl, bool openTwoTabs = true)
    {
       Chrome = new ChromeDriver();
+      Wait = new(Chrome, TimeSpan.FromSeconds(10));
+      Wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
 
       if (openTwoTabs)
          OpenNewTab();
@@ -135,7 +139,7 @@ public abstract partial class WebDriverManipulator : Helper
                string superElementAttribute = ConvertAttributeTypeToString(AttributeType.CssSelector);
                string superElementSelector = superElement.GetAttribute(superElementAttribute);
                By superElementBy = ConvertElementTypeToByType(ElementType.CssSelector, superElementSelector);
-               returnValue.Add(Chrome!.FindElement(superElementBy));
+               returnValue.Add(Wait!.Until(Chrome => Chrome!.FindElement(superElementBy)));
                breakValue[0] = true;
             }
             catch { }
@@ -171,14 +175,14 @@ public abstract partial class WebDriverManipulator : Helper
       {
          try
          {
-            returnValue.Add(Chrome!.FindElement(typeSE).FindElement(type));
+            returnValue.Add(Wait!.Until(Chrome => Chrome!.FindElement(typeSE).FindElement(type)));
             breakValue[0] = true;
          }
          catch
          {
             try
             {
-               returnValue.Add(Chrome!.FindElement(typeSE).FindElement(type));
+               returnValue.Add(Wait!.Until(Chrome => Chrome!.FindElement(typeSE).FindElement(type)));
                breakValue[0] = true;
             }
             catch { }
@@ -206,7 +210,7 @@ public abstract partial class WebDriverManipulator : Helper
       AdjustImplicitWait(shortenImplicitWaitBy);
       if (!multipleTries)
       {
-         IWebElement valuer = Chrome!.FindElement(byType);
+         IWebElement valuer = Wait!.Until(Chrome => Chrome!.FindElement(byType));
          AdjustImplicitWait(ImplicitWait);
          return valuer;
       }
@@ -214,7 +218,7 @@ public abstract partial class WebDriverManipulator : Helper
       {
          try
          {
-            IWebElement valuer = Chrome!.FindElement(byType);
+            IWebElement valuer = Wait!.Until(Chrome => Chrome!.FindElement(byType));
             AdjustImplicitWait(ImplicitWait);
             return valuer;
          }
@@ -225,10 +229,10 @@ public abstract partial class WebDriverManipulator : Helper
             {
                if (adjustWindow)
                   ResizeWindow(TMaxMin, FMaxMin);
-               Chrome!.FindElement(byType);
+               Wait!.Until(Chrome => Chrome!.FindElement(byType));
                if (adjustWindow)
                   ResizeWindow(FMaxMin, FMaxMin);
-               IWebElement valuer = Chrome!.FindElement(byType);
+               IWebElement valuer = Wait!.Until(Chrome => Chrome!.FindElement(byType));
                AdjustImplicitWait(ImplicitWait);
                return valuer;
             }
@@ -236,7 +240,7 @@ public abstract partial class WebDriverManipulator : Helper
             {
                if (adjustWindow)
                   ResizeWindow(FMaxMin, FMaxMin);
-               IWebElement valuer = Chrome!.FindElement(byType);
+               IWebElement valuer = Wait!.Until(Chrome => Chrome!.FindElement(byType));
                AdjustImplicitWait(ImplicitWait);
                return valuer;
             }
@@ -258,7 +262,7 @@ public abstract partial class WebDriverManipulator : Helper
          if (!multipleTries)
          {
             try
-            { returnArray.Add(Chrome!.FindElements(type)); }
+            { returnArray.Add(Wait!.Until(Chrome => Chrome!.FindElements(type))); }
             catch { }
          }
          else
@@ -267,7 +271,7 @@ public abstract partial class WebDriverManipulator : Helper
             {
                try
                {
-                  returnArray.Add(Chrome!.FindElements(type));
+                  returnArray.Add(Wait!.Until(Chrome => Chrome!.FindElements(type)));
                   break;
                }
                catch
@@ -277,7 +281,7 @@ public abstract partial class WebDriverManipulator : Helper
                      ResizeWindow(TMaxMin, FMaxMin);
                   try
                   {
-                     returnArray.Add(Chrome!.FindElements(type));
+                     returnArray.Add(Wait!.Until(Chrome => Chrome!.FindElements(type)));
                      break;
                   }
                   catch { }
@@ -313,7 +317,7 @@ public abstract partial class WebDriverManipulator : Helper
       // Start Local Function
       void AddElementAttributeToList(By elementBy, string attribute, List<string> elementsToReturn)
       {
-         foreach (var iElement in Chrome!.FindElements(elementBy))
+         foreach (var iElement in Wait!.Until(Chrome => Chrome!.FindElements(elementBy)))
             elementsToReturn.Add(iElement.GetAttribute(attribute));
       }
       // End Local Function
@@ -357,11 +361,11 @@ public abstract partial class WebDriverManipulator : Helper
    public ReadOnlyCollection<IWebElement> FindAllElements(bool adjustWindow, bool multipleTries, By byType)
    {
       if (!multipleTries)
-      { return Chrome!.FindElements(byType); }
+      { return Wait!.Until(Chrome => Chrome!.FindElements(byType)); }
       else
       {
          try
-         { return Chrome!.FindElements(byType); }
+         { return Wait!.Until(Chrome => Chrome!.FindElements(byType)); }
          catch
          {
             RefreshChrome();
@@ -369,12 +373,12 @@ public abstract partial class WebDriverManipulator : Helper
             {
                if (adjustWindow)
                   ResizeWindow(TMaxMin, FMaxMin);
-               Chrome!.FindElement(byType);
+               Wait!.Until(Chrome => Chrome!.FindElement(byType));
                if (adjustWindow)
                   ResizeWindow(FMaxMin, FMaxMin);
-               return Chrome!.FindElements(byType);
+               return Wait!.Until(Chrome => Chrome!.FindElements(byType));
             }
-            catch { return Chrome!.FindElements(byType); }
+            catch { return Wait!.Until(Chrome => Chrome!.FindElements(byType)); }
          }
       }
    }
@@ -556,7 +560,7 @@ public abstract partial class WebDriverManipulator : Helper
          ResizeWindow(FMaxMin, FMaxMin);
       return clicked;
    }
-   public By ConvertStringToByType(string by, string element) =>
+   public By StringToBy(string by, string element) =>
    ConvertElementTypeToByType
    (
       ConvertStringToElementType(by),
@@ -581,9 +585,9 @@ public abstract partial class WebDriverManipulator : Helper
       "classname" or "class" => ElementType.ClassName,
       "cssselector" or "selector" => ElementType.CssSelector,
       "id" => ElementType.Id,
-      "linktext" => ElementType.LinkText,
+      "linktext" or "link" => ElementType.LinkText,
       "name" => ElementType.Name,
-      "tagname" => ElementType.TagName,
+      "tagname" or "tag" => ElementType.TagName,
       "xpath" => ElementType.XPath,
       _ => throw new Exception($"The paramter {nameof(type)} has been input as \"{type}\". This is either not implemented by the {nameof(ElementType)} item or has been input erroneously."),
    };
@@ -685,7 +689,7 @@ public abstract partial class WebDriverManipulator : Helper
       return returner[0];
    }
    private string GetElementType(By type, AttributeType attributeType)
-   => Chrome!.FindElement(type).GetAttribute(ConvertAttributeTypeToString(attributeType));
+   => Wait!.Until(Chrome => Chrome!.FindElement(type)).GetAttribute(ConvertAttributeTypeToString(attributeType));
 
 
    // Window Manipulation methods
