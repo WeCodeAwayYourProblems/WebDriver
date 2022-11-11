@@ -94,9 +94,24 @@ public abstract partial class WebDriverManipulator : Helper
    public void AdjustImplicitWait(double shortenImplicitWaitBy)
    { Chrome!.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(shortenImplicitWaitBy); }
    public void RefreshChrome() => Chrome!.Navigate().Refresh();
+   public void NavigateChromeToUrl(string url, int maxAttempts = 5)
+   {
+      int counter = 0;
+      while (Chrome!.Url != url)
+      {
+         Chrome!.Navigate().GoToUrl(url);
+         if (Chrome!.Url != url)
+            Chrome.Url = url;
+         counter++;
+         if (counter == maxAttempts)
+            break;
+      }
+   }
 
 
    // FindElement() methods
+   public IWebElement FindElement(By by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault) =>
+   FindElementInternally(adjustWindow, multipleTries, by, shortenImplicitWaitBy);
    public IWebElement FindElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
       By type = ConvertElementTypeToByType(by, element);
@@ -247,6 +262,10 @@ public abstract partial class WebDriverManipulator : Helper
          }
       }
    }
+   public ReadOnlyCollection<IWebElement> FindAllElements(By by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      return FindAllElements(adjustWindow, byType: by, multipleTries: multipleTries);
+   }
    public ReadOnlyCollection<IWebElement> FindAllElements(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
       By type = ConvertElementTypeToByType(by, element);
@@ -383,8 +402,27 @@ public abstract partial class WebDriverManipulator : Helper
       }
    }
 
-
    // Click() and SendKeys() methods
+   public void ClickOnElement(By by, bool adjustWindow, bool multipleTries = true, int maxAttempts = 5, double shortenImplicitWaitTo = ImplicitWaitDefault)
+   {
+      bool clicked = false;
+      int attempts = 1;
+      AdjustImplicitWait(shortenImplicitWaitTo);
+      if (!multipleTries)
+         FindElement(by, adjustWindow, multipleTries).Click();
+      else
+      {
+         while (!clicked)
+         {
+            clicked = attempts > maxAttempts ? true : false;
+            if (clicked)
+               break;
+            clicked = ClickedOnElement(by, adjustWindow, multipleTries, shortenImplicitWaitTo);
+            attempts++;
+         }
+      }
+      AdjustImplicitWait(ImplicitWait);
+   }
    public void ClickOnElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, int maxAttempts = 5, double shortenImplicitWaitTo = ImplicitWaitDefault)
    {
       bool clicked = false;
@@ -399,7 +437,7 @@ public abstract partial class WebDriverManipulator : Helper
             clicked = attempts > maxAttempts ? true : false;
             if (clicked)
                break;
-            clicked = ClickedOnElementBool(by, adjustWindow, multipleTries, shortenImplicitWaitTo, element);
+            clicked = ClickedOnElement(by, adjustWindow, multipleTries, shortenImplicitWaitTo, element);
             attempts++;
          }
       }
@@ -458,12 +496,88 @@ public abstract partial class WebDriverManipulator : Helper
       while (!clicked)
       {
          clicked = attempts > maxAttempts ? true : false;
-         clicked = ClickedOnElementBool(by, adjustWindow: adjustWindow, multipleTries: multipleTries, shortenImplicitWaitBy, elements);
+         clicked = ClickedOnElement(by, adjustWindow: adjustWindow, multipleTries: multipleTries, shortenImplicitWaitBy, elements);
          attempts++;
       }
       AdjustImplicitWait(ImplicitWait);
    }
-   public bool ClickedOnElementBool(ElementType by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy, params string[] elements)
+   public bool ClickedOnElement(By by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy, params string[] elements)
+   {
+      bool[] clicked = new bool[1] { false };
+      foreach (var element in elements)
+      {
+         if (!multipleTries)
+         {
+            bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+            if (breakLoop)
+               break;
+         }
+         else
+         {
+            try
+            {
+               bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (ElementClickInterceptedException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (StaleElementReferenceException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (NoSuchElementException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+            catch (ElementNotInteractableException)
+            {
+               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               if (breakLoop)
+                  break;
+            }
+         }
+      }
+      return clicked[0];
+
+      // Start Local Function
+      bool LocalFuncComplexBreakLoop(By by, bool adjustWindow, bool multipleTries, out bool clicked)
+      {
+         bool breakout;
+         try
+         {
+            clicked = RefreshResizeClick(by, adjustWindow, multipleTries);
+            breakout = true;
+         }
+         catch
+         {
+            if (adjustWindow)
+               ResizeWindow(FMaxMin, FMaxMin);
+            breakout = false;
+            clicked = false;
+         }
+
+         return breakout;
+      }
+      // Start Local Function
+      bool LocalFuncSimpleBreakLoop(By by, string element, bool adjustWindow, bool multipleTries, out bool clicked)
+      {
+         FindElement(by, adjustWindow, multipleTries: multipleTries).Click();
+         clicked = true;
+         return true;
+      }
+      // End All Local Functions
+   }
+
+   public bool ClickedOnElement(ElementType by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy, params string[] elements)
    {
       bool[] clicked = new bool[1] { false };
       foreach (var element in elements)
@@ -538,6 +652,28 @@ public abstract partial class WebDriverManipulator : Helper
       }
       // End All Local Functions
    }
+   public bool RefreshResizeClick(By by, bool adjustWindow, bool multipleTries)
+   {
+      bool clicked = false;
+      RefreshChrome();
+      if (adjustWindow)
+         ResizeWindow(TMaxMin, FMaxMin);
+      try
+      {
+         FindElement(by, multipleTries).Click();
+         clicked = true;
+      }
+      catch
+      {
+         Actions actions = new(Chrome);
+         actions.MoveToElement(FindElement(by, multipleTries)).Click(FindElement(by, multipleTries)).Perform();
+         clicked = true;
+      }
+      if (adjustWindow)
+         ResizeWindow(FMaxMin, FMaxMin);
+      return clicked;
+   }
+
    public bool RefreshResizeClick(ElementType by, bool adjustWindow, string element, bool multipleTries)
    {
       bool clicked = false;
@@ -592,16 +728,23 @@ public abstract partial class WebDriverManipulator : Helper
       _ => throw new Exception($"The paramter {nameof(type)} has been input as \"{type}\". This is either not implemented by the {nameof(ElementType)} item or has been input erroneously."),
    };
 
+   public void SendKeysToElement(By by, KeysEnum message, bool multipleTries = true)
+   {
+      FindElement(by, multipleTries).SendKeys(ConvertKeys(message));
+   }
+   public void SendKeysToElement(By by, string message, bool multipleTries = true)
+   {
+      if (message != null)
+         FindElement(by, multipleTries).SendKeys(message);
+      else
+         throw new System.Exception($"{nameof(message)} parameter cannot be null.");
+   }
    public void SendKeysToElement(ElementType by, string element, string message, bool multipleTries = true)
    {
       if (message != null)
-      {
          FindElement(by, element, multipleTries).SendKeys(message);
-      }
       else
-      {
          throw new System.Exception($"{nameof(message)} parameter cannot be null.");
-      }
    }
 
 
