@@ -6,7 +6,7 @@ using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
 
 namespace CliHelperClass;
-public abstract partial class WebDriverManipulator : Helper
+public partial class WebDriverManipulator : Helper
 {
    public const double ImplicitWait = 10.0;
    public const double ImplicitWaitDefault = 0.0;
@@ -21,7 +21,7 @@ public abstract partial class WebDriverManipulator : Helper
    // Chrome methods
    public string GetCurrentUrl() => Chrome!.Url;
 
-   public virtual void StartChrome(string loginURL, bool openSecondTab, bool openThirdTab = false, bool maximizeWindow = false, bool minimizeWindow = false, int windowWidth = WindowWidth, int windowHeight = WindowHeight, bool pause = true)
+   public void StartChrome(string loginURL, bool openSecondTab, bool openThirdTab = false, bool maximizeWindow = false, bool minimizeWindow = false, int windowWidth = WindowWidth, int windowHeight = WindowHeight, bool pause = true)
    {
       // Instantiate ChromeDriver and resize Chrome window
       InstantiateChrome(loginURL, openTwoTabs: openSecondTab);
@@ -262,10 +262,7 @@ public abstract partial class WebDriverManipulator : Helper
          }
       }
    }
-   public ReadOnlyCollection<IWebElement> FindAllElements(By by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
-   {
-      return FindAllElements(adjustWindow, byType: by, multipleTries: multipleTries);
-   }
+   public ReadOnlyCollection<IWebElement> FindAllElements(By by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault) => FindAllElements(adjustWindow, byType: by, multipleTries: multipleTries);
    public ReadOnlyCollection<IWebElement> FindAllElements(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
       By type = ConvertElementTypeToByType(by, element);
