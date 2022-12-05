@@ -1,10 +1,7 @@
 namespace CliHelperClass;
-public abstract partial class WebDriverManipulator
+public enum AttributeType
 {
-   public enum AttributeType
-   {
-      Id,
-      CssSelector,
-      AriaLabel,
-   }
+   Id,
+   CssSelector,
+   AriaLabel,
 }

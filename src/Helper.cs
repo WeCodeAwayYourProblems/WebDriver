@@ -549,7 +549,7 @@ public abstract class Helper : IHelper, ITextEdit, IFileWork
       throw new NotImplementedException();
    }
 
-   public abstract void RecordPerformanceToLog(string logFileName, Dictionary<string, TimeSpan> timeStampsWithDescription);
+   public virtual void RecordPerformanceToLog(string logFileName, Dictionary<string, TimeSpan> timeStampsWithDescription) { }
 
    public Stopwatch NewTimer() => new Stopwatch();
 

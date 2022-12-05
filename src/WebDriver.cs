@@ -6,7 +6,7 @@ using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
 
 namespace CliHelperClass;
-public partial class WebDriverManipulator : Helper
+public class WebDriverManipulator : Helper
 {
    public const double ImplicitWait = 10.0;
    public const double ImplicitWaitDefault = 0.0;

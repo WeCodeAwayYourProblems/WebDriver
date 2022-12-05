@@ -1,11 +1,8 @@
 namespace CliHelperClass;
-public abstract partial class WebDriverManipulator
+public enum KeysEnum
 {
-   public enum KeysEnum
-   {
-      Enter,
-      Clear,
-      Return,
-      Escape,
-   }
+   Enter,
+   Clear,
+   Return,
+   Escape,
 }
