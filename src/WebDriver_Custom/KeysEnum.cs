@@ -1,4 +1,4 @@
-namespace CliHelperClass;
+namespace WebDriver_Custom;
 public enum KeysEnum
 {
    Enter,

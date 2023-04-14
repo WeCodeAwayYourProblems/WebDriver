@@ -1,4 +1,4 @@
-namespace CliHelperClass;
+namespace CliHelper;
 public interface IFileWork
 {
    string AllContents { get; set; }
@@ -11,6 +11,4 @@ public interface IFileWork
    string[] GetArrayFromFile(string fileName, string fileLocation, string columnHeaderToFind);
    byte[] GetBytesFromFile(string fileNameAndLocation);
    byte[] GetBytesFromFile(string fileName, string fileLocation);
-   System.Collections.Generic.Dictionary<string, System.TimeSpan> StopTimer(string description, System.Diagnostics.Stopwatch clock);
-   void StartTimer(System.Diagnostics.Stopwatch clock);
 }

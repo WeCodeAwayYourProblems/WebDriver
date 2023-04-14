@@ -1,9 +1,7 @@
-using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 
-namespace CliHelperClass;
-public abstract class Helper : IHelper, ITextEdit, IFileWork
+namespace CliHelper;
+public abstract class Helper : TextEdit, IHelper, IFileWork
 {
    private List<string> affirmative = new List<string> { "1", "y", "yes" };
    private List<string> negative = new List<string> { "0", "n", "no" };
@@ -41,21 +39,24 @@ public abstract class Helper : IHelper, ITextEdit, IFileWork
       return Console.ReadLine()!;
    }
 
-   public virtual int ConvertStringToInt(string input)
+   public virtual void InformUser(string information)
    {
-      int result;
-      bool worked = int.TryParse(input, out result);
-      if (worked)
-      {
-         return result;
-      }
-      else
-      {
-         InformUser($"Your input was {input}.\nThis was not valid.\nMinimum integer value was returned by default.");
-         return int.MinValue;
-      }
+      Console.WriteLine(information);
    }
 
+
+   public virtual bool RequestBooleanValue(string firstOptionAsBooleanStatement, string secondOptionAsBooleanStatement, int repeatRequestOnFailure)
+   {
+      IntCannotBeNegativeError(repeatRequestOnFailure);
+
+      bool[] returnBoolean = new bool[] { };
+      for (int repetition = 0; repetition > repeatRequestOnFailure; repetition++)
+      {
+         string preBool = AskUserForInput($"Please input the option you consider to be true, exactly as it appears:\n{firstOptionAsBooleanStatement}\n{secondOptionAsBooleanStatement}");
+         bool parseWorked = bool.TryParse(preBool, out returnBoolean[0]);
+      }
+      return returnBoolean[0];
+   }
    public virtual bool ConvertStringToBool(string input)
    {
       bool result;
@@ -70,50 +71,19 @@ public abstract class Helper : IHelper, ITextEdit, IFileWork
          return false;
       }
    }
-
-   public virtual void InformUser(string information)
+   public virtual int ConvertStringToInt(string input)
    {
-      Console.WriteLine(information);
-   }
-
-   public virtual string JoinText(char join, params string[] input)
-   { return String.Join(join, input); }
-
-   public virtual string JoinText(string? join = null, params string[] input)
-   { return String.Join(join, input); }
-
-   public virtual string LowerText(string input)
-   { return input.ToLower(); }
-
-   public virtual void SleepSeconds(int seconds)
-   {
-      Thread.Sleep(seconds * 1000);
-   }
-
-   public virtual void SleepSeconds(double seconds)
-   {
-      double secs = seconds * 1000;
-      Thread.Sleep((int)secs);
-   }
-
-   public virtual string SplitJoinLowerText(string input, string split = " ", string? join = null, bool toLower = true)
-   {
-      if (!toLower)
-         return JoinText(join, SplitText(input, split));
-      return LowerText(JoinText(join, SplitText(input, split)));
-   }
-
-   public virtual bool RequestBooleanValue(string firstOptionAsBooleanStatement, string secondOptionAsBooleanStatement, int repeatRequestOnFailure)
-   {
-      IntCannotBeNegativeError(repeatRequestOnFailure);
-
-      bool[] returnBoolean = new bool[] { };
-      for (int repetition = 0; repetition > repeatRequestOnFailure; repetition++)
+      int result;
+      bool worked = int.TryParse(input, out result);
+      if (worked)
       {
-         string preBool = AskUserForInput($"Please input the option you consider to be true, exactly as it appears:\n{firstOptionAsBooleanStatement}\n{secondOptionAsBooleanStatement}");
-         bool parseWorked = bool.TryParse(preBool, out returnBoolean[0]);
+         return result;
       }
-      return returnBoolean[0];
+      else
+      {
+         InformUser($"Your input was {input}.\nThis was not valid.\nMinimum integer value was returned by default.");
+         return int.MinValue;
+      }
    }
 
    public virtual bool RequestBooleanValue(int repeatRequestOnFailure, string? prompt = null, params string[] option)
@@ -458,43 +428,6 @@ public abstract class Helper : IHelper, ITextEdit, IFileWork
          throw new Exception($"{nameof(attempts)} parameter cannot be negative.");
    }
 
-   public string SplitJoinLowerText(string input, char split = ' ', string? join = null, bool lower = true)
-   {
-      if (!lower)
-         return JoinText(join, SplitText(input, split));
-      return LowerText(JoinText(join, SplitText(input, split)));
-   }
-
-   public string SplitJoinLowerText(string input, char split = ' ', char join = ' ', bool lower = true)
-   {
-      if (!lower)
-         return JoinText(join, SplitText(input, split));
-      return LowerText(JoinText(join, SplitText(input, split)));
-   }
-
-   public string SplitJoinLowerText(string input, Regex split, string? join = null, bool lower = true)
-   {
-      if (!lower)
-         return JoinText(join, SplitText(input, split));
-      return LowerText(JoinText(join, SplitText(input, split)));
-   }
-
-   public string SplitJoinLowerText(string input, Regex split, char join = ' ', bool lower = true)
-   {
-      if (!lower)
-         return JoinText(join, SplitText(input, split));
-      return LowerText(JoinText(join, SplitText(input, split)));
-   }
-
-   public string[] SplitText(string input, char split)
-   { return input.Split(split); }
-
-   public string[] SplitText(string input, string split)
-   { return input.Split(split); }
-
-   public string[] SplitText(string input, Regex split)
-   { return split.Split(input); }
-
    public void PauseUntilKeyStroke(string prompt)
    {
       InformUser(prompt);
@@ -547,23 +480,6 @@ public abstract class Helper : IHelper, ITextEdit, IFileWork
    public byte[] GetBytesFromFile(string fileName, string fileLocation)
    {
       throw new NotImplementedException();
-   }
-
-   public virtual void RecordPerformanceToLog(string logFileName, Dictionary<string, TimeSpan> timeStampsWithDescription) { }
-
-   public Stopwatch NewTimer() => new Stopwatch();
-
-   public virtual void StartTimer(Stopwatch clock) => clock.Start();
-
-   public virtual Dictionary<string, TimeSpan> StopTimer(string description, Stopwatch clock)
-   {
-      clock.Stop();
-      Dictionary<string, TimeSpan> record = new();
-      record.Add(description, clock.Elapsed);
-
-      // It's a good idea to use the following method before returning the stop timer:
-      string recommendedMethod = $"{nameof(RecordPerformanceToLog)}";
-      return record;
    }
 
    public const string PerformanceLogFolder = "/home/ben/CS_area/taskFox/src/TaskFox/TaskAssets/PerformanceLogs/";

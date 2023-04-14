@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace CliHelperClass;
+namespace CliHelper;
 public interface ITextEdit
 {
    string SplitJoinLowerText(string input, string split = " ", string? join = null, bool lower = true);
@@ -14,6 +14,4 @@ public interface ITextEdit
    string JoinText(char join, params string[] input);
    string JoinText(string? join = null, params string[] input);
    string LowerText(string input);
-   int ConvertStringToInt(string input);
-   bool ConvertStringToBool(string input);
 }

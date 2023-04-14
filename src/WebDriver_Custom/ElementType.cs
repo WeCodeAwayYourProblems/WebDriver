@@ -1,4 +1,4 @@
-namespace CliHelperClass;
+namespace WebDriver_Custom;
 
 // Enums for special types
 public enum ElementType
