@@ -112,12 +112,12 @@ public class WebDriverManipulator : WebDriverParent
    FindElementInternally(adjustWindow, multipleTries, by, shortenImplicitWaitBy);
    public IWebElement FindElement(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By type = ConvertElementTypeToByType(by, element);
+      By type = ConvertElementToBy(by, element);
       return FindElementInternally(adjustWindow, multipleTries, type, shortenImplicitWaitBy);
    }
    public IWebElement FindElement(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By type = ConvertElementTypeToByType(by, element);
+      By type = ConvertElementToBy(by, element);
       AdjustImplicitWait(shortenImplicitWaitBy);
       List<IWebElement> returnValue = new(1);
 
@@ -151,7 +151,7 @@ public class WebDriverManipulator : WebDriverParent
             {
                string superElementAttribute = ConvertAttributeTypeToString(AttributeType.CssSelector);
                string superElementSelector = superElement.GetAttribute(superElementAttribute);
-               By superElementBy = ConvertElementTypeToByType(ElementType.CssSelector, superElementSelector);
+               By superElementBy = ConvertElementToBy(ElementType.CssSelector, superElementSelector);
                returnValue.Add(Wait!.Until(Chrome => Chrome!.FindElement(superElementBy)));
                breakValue[0] = true;
             }
@@ -162,8 +162,8 @@ public class WebDriverManipulator : WebDriverParent
    }
    public IWebElement FindElement(ElementType bySE, string superElement, ElementType by, string element, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By typeSE = ConvertElementTypeToByType(bySE, superElement);
-      By type = ConvertElementTypeToByType(by, element);
+      By typeSE = ConvertElementToBy(bySE, superElement);
+      By type = ConvertElementToBy(by, element);
       AdjustImplicitWait(shortenImplicitWaitBy);
       List<IWebElement> returnValue = new(1) { Chrome!.FindElement(typeSE) };
 
@@ -208,7 +208,7 @@ public class WebDriverManipulator : WebDriverParent
       IWebElement[] returnElement = new IWebElement[] { };
       foreach (var element in elements)
       {
-         By type = ConvertElementTypeToByType(by, element);
+         By type = ConvertElementToBy(by, element);
          try
          {
             returnElement[0] = FindElementInternally(adjustWindow, multipleTries, type, shortenImplicitWaitBy);
@@ -263,7 +263,7 @@ public class WebDriverManipulator : WebDriverParent
    public ReadOnlyCollection<IWebElement> FindAllElements(By by, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault) => FindAllElements(adjustWindow, byType: by, multipleTries: multipleTries);
    public ReadOnlyCollection<IWebElement> FindAllElements(ElementType by, string element, bool adjustWindow, bool multipleTries = true, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By type = ConvertElementTypeToByType(by, element);
+      By type = ConvertElementToBy(by, element);
       return FindAllElements(adjustWindow, byType: type, multipleTries: multipleTries);
    }
    public ReadOnlyCollection<IWebElement> FindAllElementsWithManyPossibleStrings(ElementType by, bool adjustWindow, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault, params string[] elements)
@@ -272,7 +272,7 @@ public class WebDriverManipulator : WebDriverParent
       List<ReadOnlyCollection<IWebElement>> returnArray = new(1);
       foreach (var element in elements)
       {
-         By type = ConvertElementTypeToByType(by, element);
+         By type = ConvertElementToBy(by, element);
          if (!multipleTries)
          {
             try
@@ -308,7 +308,7 @@ public class WebDriverManipulator : WebDriverParent
    }
    public List<string> GetAllElementsAttribute(ElementType by, string element, AttributeType typeToReturn, bool multipleTries = true, int tries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By elementBy = ConvertElementTypeToByType(by, element);
+      By elementBy = ConvertElementToBy(by, element);
       string attribute = ConvertAttributeTypeToString(typeToReturn);
       List<string> elementsToReturn = new();
       if (!multipleTries)
@@ -348,7 +348,7 @@ public class WebDriverManipulator : WebDriverParent
 
    public ReadOnlyCollection<IWebElement> FindAllElements(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int tries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
-      By type = ConvertElementTypeToByType(by, element);
+      By type = ConvertElementToBy(by, element);
       return FindElementsBySuperElement(superElement, type, multipleTries, tries, shortenImplicitWaitBy);
 
       // Start Local Function
@@ -691,25 +691,12 @@ public class WebDriverManipulator : WebDriverParent
          ResizeWindow(FMaxMin, FMaxMin);
       return clicked;
    }
-   public By StringToBy(string by, string element) =>
-   ConvertElementTypeToByType
+   public By ConvertStringToBy(string by, string element) =>
+   ConvertElementToBy
    (
       ConvertStringToElementType(by),
       element
    );
-   public By ConvertElementTypeToByType(ElementType by, string element) =>
-   by switch
-   {
-      ElementType.ClassName => By.ClassName(element),
-      ElementType.CssSelector => By.CssSelector(element),
-      ElementType.Id => By.Id(element),
-      ElementType.LinkText => By.LinkText(element),
-      ElementType.Name => By.Name(element),
-      ElementType.TagName => By.TagName(element),
-      ElementType.XPath => By.XPath(element),
-      _ => throw new Exception($"{nameof(ElementType)} {by} has not been implemented in the switch conversion inside the {nameof(ConvertElementTypeToByType)} method in {nameof(WebDriverManipulator)} class."),
-   };
-
    public ElementType ConvertStringToElementType(string type) =>
    SplitJoinLowerText(type, split: " ") switch
    {
@@ -721,6 +708,18 @@ public class WebDriverManipulator : WebDriverParent
       "tagname" or "tag" => ElementType.TagName,
       "xpath" => ElementType.XPath,
       _ => throw new Exception($"The paramter {nameof(type)} has been input as \"{type}\". This is either not implemented by the {nameof(ElementType)} item or has been input erroneously."),
+   };
+   public By ConvertElementToBy(ElementType by, string element) =>
+   by switch
+   {
+      ElementType.ClassName => By.ClassName(element),
+      ElementType.CssSelector => By.CssSelector(element),
+      ElementType.Id => By.Id(element),
+      ElementType.LinkText => By.LinkText(element),
+      ElementType.Name => By.Name(element),
+      ElementType.TagName => By.TagName(element),
+      ElementType.XPath => By.XPath(element),
+      _ => throw new Exception($"{nameof(ElementType)} {by} has not been implemented in the switch conversion inside the {nameof(ConvertElementToBy)} method in {nameof(WebDriverManipulator)} class."),
    };
 
    public void SendKeysToElement(By by, KeysEnum message, bool multipleTries = true)
@@ -811,7 +810,7 @@ public class WebDriverManipulator : WebDriverParent
    // Get Attribute methods
    public string GetElementType(ElementType by, string element, AttributeType attributeType)
    {
-      By type = ConvertElementTypeToByType(by, element);
+      By type = ConvertElementToBy(by, element);
       return GetElementType(type, attributeType);
    }
    public string GetElementTypeWithManyPossibleStrings(ElementType by, AttributeType attributeType, params string[] elements)
@@ -819,7 +818,7 @@ public class WebDriverManipulator : WebDriverParent
       string[] returner = new string[1] { "" };
       foreach (var element in elements)
       {
-         By type = ConvertElementTypeToByType(by, element);
+         By type = ConvertElementToBy(by, element);
 
          try { returner[0] = GetElementType(type, attributeType); }
          catch { };
