@@ -35,7 +35,7 @@ public class WebDriverManipulator : WebDriverParent
       if (openThirdTab)
          OpenNewTab();
 
-      NavigateToUrl(loginURL, usualWay: false);
+      NavigateToUrl_CatchWebDriverException(loginURL, usualWay: false);
    }
    public void InstantiateChrome(string loginUrl, bool openTwoTabs = true)
    {
@@ -97,14 +97,12 @@ public class WebDriverManipulator : WebDriverParent
    public void NavigateChromeToUrl(string url, int maxAttempts = 5)
    {
       int counter = 0;
-      while (Chrome!.Url != url)
+      while (Chrome!.Url != url && counter != maxAttempts)
       {
          Chrome!.Navigate().GoToUrl(url);
          if (Chrome!.Url != url)
             Chrome.Url = url;
          counter++;
-         if (counter == maxAttempts)
-            break;
       }
    }
 
@@ -852,7 +850,7 @@ public class WebDriverManipulator : WebDriverParent
    public void ExecuteAScript(string script) => ((IJavaScriptExecutor)Chrome!).ExecuteScript(script);
    public void SwitchToWindow(string window) => Chrome!.SwitchTo().Window(window);
    public void SwitchToWindow(int windowNum) => Chrome!.SwitchTo().Window(Chrome!.WindowHandles[windowNum]);
-   public void NavigateToUrl(string url, bool usualWay)
+   public void NavigateToUrl_CatchWebDriverException(string url, bool usualWay)
    {
       if (usualWay)
       {
