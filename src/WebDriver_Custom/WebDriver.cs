@@ -218,7 +218,7 @@ public class WebDriverManipulator : WebDriverParent
       }
       return returnElement[0];
    }
-   private IWebElement FindElementInternally(bool adjustWindow, bool multipleTries, By byType, double shortenImplicitWaitBy)
+   internal IWebElement FindElementInternally(bool adjustWindow, bool multipleTries, By byType, double shortenImplicitWaitBy)
    {
       AdjustImplicitWait(shortenImplicitWaitBy);
       if (!multipleTries)
@@ -836,10 +836,9 @@ public class WebDriverManipulator : WebDriverParent
          throw new ArgumentException($"Parameter arguments {nameof(maximize)} and {nameof(minimize)} cannot both be true in {nameof(ResizeWindow)}.\nArg {nameof(maximize)} input: {maximize}.\nArg {nameof(minimize)} input: {minimize}");
       if (minimize)
          Chrome!.Manage().Window.Minimize();
-      if (maximize)
+      else if (maximize)
          Chrome!.Manage().Window.Maximize();
-
-      if (width > 0 && height > 0)
+      else if (width > 0 && height > 0)
          LocalResizeWindow(width, height);
       SleepSeconds(0.5);
 
@@ -977,7 +976,7 @@ public class WebDriverManipulator : WebDriverParent
       "escape" => Keys.Escape,
       _ => throw KeyException,
    };
-   public KeysEnum ConvertFromStringToKeyEnum(string key) =>
+   public KeysEnum ConvertStringToKeys(string key) =>
       SplitJoinLowerText(key, " ") switch
       {
          "enter" => KeysEnum.Enter,
