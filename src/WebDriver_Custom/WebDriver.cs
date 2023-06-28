@@ -115,6 +115,50 @@ public class WebDriverManipulator : WebDriverParent
       By type = ConvertElementToBy(by, element);
       return FindElementInternally(adjustWindow, multipleTries, type, shortenImplicitWaitBy);
    }
+   public IWebElement FindElement(IWebElement superElement, By by, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
+   {
+      AdjustImplicitWait(shortenImplicitWaitBy);
+      List<IWebElement> returnValue = new(1);
+
+      bool[] breakValue = new bool[1] { false };
+      if (multipleTries)
+      {
+         for (int tries = 1; tries <= maxTries; tries++)
+         {
+            LocalFuncDoubleFindElementMethod(superElement, by, returnValue, breakValue);
+            if (breakValue[0])
+               break;
+         }
+      }
+      else
+      { LocalFuncDoubleFindElementMethod(superElement, by, returnValue, breakValue); }
+
+      AdjustImplicitWait(ImplicitWait);
+      return returnValue[0];
+
+      // Start Local Functions
+      void LocalFuncDoubleFindElementMethod(IWebElement superElement, By type, List<IWebElement> returnValue, bool[] breakValue)
+      {
+         try
+         {
+            returnValue.Add(superElement.FindElement(type));
+            breakValue[0] = true;
+         }
+         catch
+         {
+            try
+            {
+               string superElementAttribute = ConvertAttributeTypeToString(AttributeType.CssSelector);
+               string superElementSelector = superElement.GetAttribute(superElementAttribute);
+               By superElementBy = ConvertElementToBy(ElementType.CssSelector, superElementSelector);
+               returnValue.Add(Wait!.Until(Chrome => Chrome!.FindElement(superElementBy)));
+               breakValue[0] = true;
+            }
+            catch { }
+         }
+      }
+      // End Local Functions
+   }
    public IWebElement FindElement(IWebElement superElement, ElementType by, string element, bool multipleTries = true, int maxTries = 5, double shortenImplicitWaitBy = ImplicitWaitDefault)
    {
       By type = ConvertElementToBy(by, element);
