@@ -540,14 +540,15 @@ public class WebDriverManipulator : WebDriverParent
       }
       AdjustImplicitWait(ImplicitWait);
    }
-   public bool ClickedOnElement(By by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy, params string[] elements)
+   public bool ClickedOnElement(By by, bool adjustWindow, bool multipleTries, double shortenImplicitWaitBy)
    {
       bool[] clicked = new bool[1] { false };
-      foreach (var element in elements)
+      bool breakLoop = false;
+      while (!breakLoop)
       {
          if (!multipleTries)
          {
-            bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+            breakLoop = LocalFuncSimpleBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
             if (breakLoop)
                break;
          }
@@ -555,31 +556,31 @@ public class WebDriverManipulator : WebDriverParent
          {
             try
             {
-               bool breakLoop = LocalFuncSimpleBreakLoop(by, element, adjustWindow, multipleTries, out clicked[0]);
+               breakLoop = LocalFuncSimpleBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
                if (breakLoop)
                   break;
             }
             catch (ElementClickInterceptedException)
             {
-               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
                if (breakLoop)
                   break;
             }
             catch (StaleElementReferenceException)
             {
-               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
                if (breakLoop)
                   break;
             }
             catch (NoSuchElementException)
             {
-               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
                if (breakLoop)
                   break;
             }
             catch (ElementNotInteractableException)
             {
-               bool breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
+               breakLoop = LocalFuncComplexBreakLoop(by, adjustWindow, multipleTries, out clicked[0]);
                if (breakLoop)
                   break;
             }
@@ -607,7 +608,7 @@ public class WebDriverManipulator : WebDriverParent
          return breakout;
       }
       // Start Local Function
-      bool LocalFuncSimpleBreakLoop(By by, string element, bool adjustWindow, bool multipleTries, out bool clicked)
+      bool LocalFuncSimpleBreakLoop(By by, bool adjustWindow, bool multipleTries, out bool clicked)
       {
          FindElement(by, adjustWindow, multipleTries: multipleTries).Click();
          clicked = true;
@@ -807,7 +808,7 @@ public class WebDriverManipulator : WebDriverParent
          catch { }
 
          if (text[0] != "")
-         { break; }
+            break;
       }
       AdjustImplicitWait(ImplicitWait);
 
